@@ -2,7 +2,11 @@
 	<div class="page-wrapper">
 		<div class="content-wrapper">
 			<h1 v-if="!userStartedChat">Hello! What do you have on your mind?</h1>
-			<div v-else class="chat-messages-box">
+			<div
+				v-else
+				class="chat-messages-box"
+				ref="chatMessagesBox"
+			>
 				<div
 					v-for="(message, index) in chatMessages"
 					:key="index"
@@ -19,23 +23,36 @@
 					</div>
 				</div>
 			</div>
-			<div class="user-input-wrapper">
-				<input type="text" v-model="userInput" @change="log" />
-				<div
-					class="send-btn"
-					@click="sendMessage"
-					:class="eveThinking ? 'disabled' : 'active'"
-				>
-					<font-awesome-icon :icon="['fas', 'arrow-up']" />
+			<div
+				style="
+					position: fixed;
+					width: 100%;
+					background-color: white;
+					height: 85px;
+					bottom: 0;
+				"
+			>
+				<div class="user-input-wrapper">
+					<input
+						type="text"
+						v-model="userInput"
+						@keydown.enter="sendMessage"
+					/>
+					<div
+						class="send-btn"
+						@click="sendMessage"
+						:class="eveThinking ? 'disabled' : 'active'"
+					>
+						<font-awesome-icon :icon="['fas', 'arrow-up']" />
+					</div>
 				</div>
 			</div>
 		</div>
 	</div>
 </template>
 
-<script>
-// import ApiService from "@/services/api.js";
 
+<script>
 export default {
 	name: "mainWindow",
 	data() {
@@ -46,6 +63,17 @@ export default {
 			chatMessages: [],
 			eveThinking: false,
 		};
+	},
+
+	watch: {
+		chatMessages() {
+			this.$nextTick(() => {
+				const chatBox = this.$refs.chatMessagesBox;
+				if (chatBox) {
+					chatBox.scrollTop = chatBox.scrollHeight;
+				}
+			});
+		}
 	},
 
 	methods: {
@@ -113,7 +141,6 @@ function sleep(ms) {
 }
 
 h1 {
-	margin-bottom: 50%;
 	padding: 0;
 }
 
@@ -133,123 +160,80 @@ input {
 	font-size: 18px;
 }
 
-.content-wrapper {
+.page-wrapper {
 	display: flex;
 	flex-direction: column;
-	align-items: center;
-	justify-content: flex-end;
-	height: 95vh; /* Adjusted to occupy full height minus a small margin */
+	overflow-y: auto; /* Enable scrolling for the entire page */
 }
 
-.user-input-wrapper {
-	position: fixed;
-	bottom: 10px; /* Adjust the distance from the bottom */
-	left: 50%;
-	transform: translateX(-50%);
-	border-radius: 10px;
+.content-wrapper {
+	flex: 1; /* Fill available space */
 	display: flex;
-	flex-direction: row;
-	align-items: center;
-	justify-content: center;
-	width: fit-content;
-	border: 1px solid #f3e8e1;
-	height: 35px;
-	padding: 10px;
-	background-color: white;
-	margin-bottom: 10px;
-
-	.send-btn {
-		display: flex;
-		justify-items: center;
-		align-items: center;
-		width: fit-content;
-		transition: 0.15s;
-		cursor: pointer;
-		margin-left: 10px;
-		border-radius: 10px;
-		background-color: #f3e8e1;
-
-		&:hover {
-			background-color: #a7d4d2;
-			color: white;
-		}
-
-		svg {
-			padding: 10px;
-			width: 16px;
-			height: 16px;
-		}
-	}
-
-	.disabled {
-		cursor: not-allowed;
-		background-color: #e4e4e4;
-		color: #8a8a8a;
-
-		&:hover {
-			background-color: #e4e4e4;
-			color: #8a8a8a;
-		}
-	}
+	flex-direction: column;
+	justify-content: center; /* Center content vertically */
+	align-items: center; /* Center content horizontally */
+	padding-bottom: 100px; /* Space for the fixed input at the bottom */
 }
 
 .chat-messages-box {
-	width: 588px;
-	flex: 1;
+	width: 40%;
+	height: 80%; /* Set a fixed height */
 	display: flex;
 	flex-direction: column;
 	gap: 20px;
-	margin-bottom: 50px; /* Adjust margin to accommodate fixed input */
-	overflow-y: auto; /* Enable scrolling when content overflows */
-
-	.message {
-		display: flex;
-		flex-direction: column;
-		align-items: flex-start;
-		max-width: 100%;
-		text-align: left;
-	}
-
-	.message-box {
-		background-color: #a7d4d2;
-		color: white;
-		border-radius: 10px;
-		padding: 10px 20px;
-		word-wrap: break-word;
-		white-space: pre-wrap;
-		max-width: 100%;
-		box-sizing: border-box;
-		position: relative; /* Required for the typing cursor */
-	}
-
-	.message-who {
-		font-weight: bold;
-		margin-bottom: 5px;
-	}
-
-	.eve-message {
-		align-self: flex-start;
-		.message-box {
-			background-color: #f0f0f0;
-			color: black;
-			border: 1px solid #dcdcdc;
-		}
-	}
-
-	.user-message {
-		align-self: flex-end;
-		.message-box {
-			background-color: #a7d4d2;
-			color: white;
-			// 	border: 1px solid #87b8b6;
-		}
-	}
+	align-items: flex-start; /* Align messages to the left for Eve */
+	overflow-y: auto; /* Enable vertical scrolling */
 }
 
-.eve-is-thinking-messsage {
-	margin-bottom: 15px;
+.user-message {
+	align-self: flex-end; /* Align user messages to the right */
+}
+
+.user-message .message-box {
+	background-color: #a7d4d2;
+	color: white;
+}
+
+.eve-message .message-box {
+	background-color: #f0f0f0;
+	color: black;
+	border: 1px solid #dcdcdc;
+}
+
+.message {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	max-width: 100%;
 	text-align: left;
-	width: 588px;
+}
+
+.message-box {
+	background-color: #a7d4d2;
+	color: white;
+	border-radius: 10px;
+	padding: 10px 20px;
+	word-wrap: break-word;
+	white-space: pre-wrap;
+	max-width: 100%;
+	box-sizing: border-box;
+	position: relative; /* Required for the typing cursor */
+}
+
+.message-who {
+	font-weight: bold;
+	margin-bottom: 5px;
+}
+
+.user-message .message-box {
+	background-color: #a7d4d2;
+	color: white;
+}
+
+.eve-message .message-box {
+	background-color: #f0f0f0;
+	color: black;
+	border: 1px solid #dcdcdc;
 }
 
 .message-box.typing::after {
@@ -268,5 +252,54 @@ input {
 	50% {
 		opacity: 1;
 	}
+}
+
+.user-input-wrapper {
+	position: fixed;
+	bottom: 10px; /* Adjust the distance from the bottom */
+	left: 50%;
+	transform: translateX(-50%);
+	border-radius: 10px;
+	display: flex;
+	align-items: center;
+	width: fit-content;
+	border: 1px solid #f3e8e1;
+	height: 35px;
+	padding: 10px;
+	background-color: white;
+	margin-bottom: 10px;
+}
+
+.send-btn {
+	display: flex;
+	justify-items: center;
+	align-items: center;
+	transition: 0.15s;
+	cursor: pointer;
+	margin-left: 10px;
+	border-radius: 10px;
+	background-color: #f3e8e1;
+}
+
+.send-btn:hover {
+	background-color: #a7d4d2;
+	color: white;
+}
+
+.send-btn svg {
+	padding: 10px;
+	width: 16px;
+	height: 16px;
+}
+
+.send-btn.disabled {
+	cursor: not-allowed;
+	background-color: #e4e4e4;
+	color: #8a8a8a;
+}
+
+.send-btn.disabled:hover {
+	background-color: #e4e4e4;
+	color: #8a8a8a;
 }
 </style>
