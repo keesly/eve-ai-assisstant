@@ -1,12 +1,9 @@
 <template>
 	<div class="page-wrapper">
+		<div class="session-info">Session id: {{sessionId}}</div>
 		<div class="content-wrapper">
 			<h1 v-if="!userStartedChat">Hello! What do you have on your mind?</h1>
-			<div
-				v-else
-				class="chat-messages-box"
-				ref="chatMessagesBox"
-			>
+			<div v-else class="chat-messages-box" ref="chatMessagesBox">
 				<div
 					v-for="(message, index) in chatMessages"
 					:key="index"
@@ -33,11 +30,7 @@
 				"
 			>
 				<div class="user-input-wrapper">
-					<input
-						type="text"
-						v-model="userInput"
-						@keydown.enter="sendMessage"
-					/>
+					<input type="text" v-model="userInput" @keydown.enter="sendMessage" />
 					<div
 						class="send-btn"
 						@click="sendMessage"
@@ -51,17 +44,19 @@
 	</div>
 </template>
 
-
 <script>
+import APIService from "@/services/api.js";	
+
 export default {
 	name: "mainWindow",
 	data() {
 		return {
-			items: [],
 			userInput: "",
 			userStartedChat: false,
 			chatMessages: [],
 			eveThinking: false,
+			sessionId: "",
+			userEmail: "fidgetyman@gmail.com"
 		};
 	},
 
@@ -73,7 +68,13 @@ export default {
 					chatBox.scrollTop = chatBox.scrollHeight;
 				}
 			});
-		}
+		},
+	},
+
+	async mounted () {
+		this.sessionId = await APIService.getSessionToken({
+			email: this.userEmail
+		})
 	},
 
 	methods: {
@@ -81,44 +82,52 @@ export default {
 			if (this.userInput !== "") {
 				this.userStartedChat = true;
 
-				// User's message
+				// Capture the user's message
+				const userMessage = this.userInput;
+
+				// Display the user's message in the chat
 				this.chatMessages.push({
 					who: "user",
-					message: this.userInput,
+					message: userMessage,
 				});
 
 				this.userInput = "";
 				this.eveThinking = true;
 
-				// Simulate Eve thinking
-				//await sleep(1000);
+				try {
+					// Send the message and session ID to the backend
+					const response = await APIService.processMessage({
+						message: userMessage,
+						session_id: this.sessionId, // Include the session ID
+					});
 
-				// Simulate Eve typing response
-				const eveMessage = {
-					who: "eve",
-					message: "",
-					typingText: "",
-					isTyping: true,
-				};
+					if (response) {
+						// Display Eve's response with typing effect
+						const eveMessage = {
+							who: "eve",
+							message: "",
+							typingText: "",
+							isTyping: true,
+						};
 
-				this.chatMessages.push(eveMessage);
-				await this.typeText(
-					eveMessage,
-					"Eve's generated response, typing character by character."
-				);
+						this.chatMessages.push(eveMessage);
+						await this.typeText(eveMessage, response.message);
 
-				eveMessage.isTyping = false;
-				this.eveThinking = false;
+						eveMessage.isTyping = false;
+						this.eveThinking = false;
+					}
+				} catch (error) {
+					console.error("Error processing message:", error);
+					this.eveThinking = false;
+				}
 			}
 		},
 
 		async typeText(messageObject, fullText) {
 			for (let i = 0; i < fullText.length; i++) {
 				messageObject.typingText += fullText[i];
-
 				this.$forceUpdate();
-
-				await sleep(5);
+				await sleep(5); // Simulate typing speed
 			}
 			messageObject.message = fullText;
 			messageObject.typingText = null;
@@ -164,6 +173,15 @@ input {
 	display: flex;
 	flex-direction: column;
 	overflow-y: auto; /* Enable scrolling for the entire page */
+	position: relative;
+}
+
+.session-info {
+	position: fixed;
+	right: 0;
+	bottom: 0;
+	z-index: 999;
+	font-size: 12px;
 }
 
 .content-wrapper {

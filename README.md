@@ -1,4 +1,4 @@
-# eve-1.0
+# Eve
 
 ## Project setup
 ```
